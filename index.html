@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Timetable Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Styles for the generated timetables */
+        .timetable-grid {
+            display: grid;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .timetable-batch {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .timetable-batch h3 {
+            background-color: #f8fafc;
+            padding: 12px 16px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .timetable-batch table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .timetable-batch th, .timetable-batch td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .timetable-batch th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            color: #334155;
+        }
+        .timetable-batch td {
+            background-color: #fff;
+            height: 90px;
+        }
+        .timetable-batch td div {
+            font-weight: 500;
+        }
+        .timetable-batch td span {
+            display: block;
+            font-size: 0.875rem;
+            color: #475569;
+            margin-top: 4px;
+        }
+        .timetable-batch td:empty {
+            background-color: #f8fafc;
+        }
+        /* JSON input textareas */
+        textarea.json-input {
+            font-family: monospace;
+            height: 150px;
+            font-size: 14px;
+            line-height: 1.5;
+            background-color: #f8fafc;
+            border-color: #e2e8f0;
+            border-radius: 8px;
+        }
+         textarea.json-input:focus {
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px #3b82f630;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8 max-w-full">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Advanced Timetable Generator</h1>
+            <p class="text-lg text-gray-600 mt-2">Create optimized school or college timetables using a genetic algorithm.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Input Section -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg h-fit">
+                <h2 class="text-2xl font-semibold mb-6 border-b pb-3">Configuration</h2>
+
+                <!-- General Settings -->
+                <div class="mb-4 p-4 border rounded-lg bg-gray-50">
+                    <h3 class="text-lg font-semibold mb-3">General Settings</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="working-days" class="block text-sm font-medium text-gray-700">Days/Week</label>
+                            <input type="number" id="working-days" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="5">
+                        </div>
+                        <div>
+                            <label for="hours-per-day" class="block text-sm font-medium text-gray-700">Hours/Day</label>
+                            <input type="number" id="hours-per-day" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="8">
+                        </div>
+                         <div>
+                            <label for="start-hour" class="block text-sm font-medium text-gray-700">Start Hour</label>
+                            <input type="number" id="start-hour" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="9">
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Genetic Algorithm Settings -->
+                <div class="mb-4 p-4 border rounded-lg bg-gray-50">
+                    <div class="flex items-center justify-between mb-3">
+                         <h3 class="text-lg font-semibold">Genetic Algorithm</h3>
+                         <input type="checkbox" id="use-genetic" class="h-5 w-5 rounded text-blue-600" checked>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="population-size" class="block text-sm font-medium text-gray-700">Population</label>
+                            <input type="number" id="population-size" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="50">
+                        </div>
+                        <div>
+                            <label for="generations" class="block text-sm font-medium text-gray-700">Generations</label>
+                            <input type="number" id="generations" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="100">
+                        </div>
+                        <div class="col-span-2">
+                            <label for="mutation-rate" class="block text-sm font-medium text-gray-700">Mutation Rate</label>
+                            <input type="number" id="mutation-rate" class="mt-1 w-full p-2 border border-gray-300 rounded-lg" value="0.1" step="0.01" min="0" max="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JSON Inputs -->
+                <div class="space-y-4">
+                    <div>
+                        <label for="classrooms-input" class="block text-sm font-medium text-gray-700 mb-1">Classrooms (JSON)</label>
+                        <textarea id="classrooms-input" class="w-full p-2 border json-input"></textarea>
+                    </div>
+                     <div>
+                        <label for="faculties-input" class="block text-sm font-medium text-gray-700 mb-1">Faculties (JSON)</label>
+                        <textarea id="faculties-input" class="w-full p-2 border json-input"></textarea>
+                    </div>
+                     <div>
+                        <label for="batches-input" class="block text-sm font-medium text-gray-700 mb-1">Batches & Subjects (JSON)</label>
+                        <textarea id="batches-input" class="w-full p-2 border json-input h-64"></textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <button onclick="runGenerator()" class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300 text-lg font-semibold shadow-md">Generate Timetable</button>
+                    <button onclick="loadSampleData()" class="mt-3 w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Load Sample Data</button>
+                </div>
+            </div>
+
+            <!-- Timetable Output Section -->
+            <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Generated Timetable</h2>
+                <div id="status-output" class="mb-4 text-gray-600"></div>
+                <div id="timetable-output" class="overflow-x-auto">
+                    <p class="text-gray-500">Input your configuration and click "Generate Timetable". You can load sample data to get started.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA STRUCTURES (CLASSES) ---
+        // These classes mirror the structure from your Python code.
+        class TimeSlot {
+            constructor(day, hour) {
+                this.day = day; // 0-6 (Monday to Sunday)
+                this.hour = hour; // 0-23
+            }
+            toString() {
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                return `${days[this.day]} ${String(this.hour).padStart(2, '0')}:00`;
+            }
+            equals(other) {
+                return this.day === other.day && this.hour === other.hour;
+            }
+            static getKey(day, hour) {
+                return `${day}-${hour}`;
+            }
+        }
+
+        class Subject {
+            constructor(name, classes_per_week, duration_hours = 1) {
+                this.name = name;
+                this.classes_per_week = classes_per_week;
+                this.duration_hours = duration_hours;
+            }
+        }
+
+        class Batch {
+            constructor(name, subjects, max_classes_per_day) {
+                this.name = name;
+                this.subjects = subjects.map(s => new Subject(s.name, s.classes_per_week));
+                this.max_classes_per_day = max_classes_per_day;
+            }
+        }
+
+        class Classroom {
+            constructor(id, capacity) {
+                this.id = id;
+                this.capacity = capacity;
+            }
+        }
+
+        class Faculty {
+            constructor(id, name, subjects, unavailable_slots = []) {
+                this.id = id;
+                this.name = name;
+                this.subjects = subjects; // Array of subject names
+                this.unavailable_slots = new Set(unavailable_slots.map(s => TimeSlot.getKey(s.day, s.hour)));
+            }
+        }
+
+        class TimetableEntry {
+            constructor(subject, batch, classroom, faculty, time_slot) {
+                this.subject = subject;
+                this.batch = batch;
+                this.classroom = classroom;
+                this.faculty = faculty;
+                this.time_slot = time_slot;
+            }
+        }
+
+        // --- CORE LOGIC: TIMETABLE GENERATOR ---
+        // This is a direct port of your Python TimetableGenerator class.
+        class TimetableGenerator {
+            constructor(classrooms, batches, faculties, working_days, working_hours_per_day, start_hour) {
+                this.classrooms = classrooms.reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
+                this.batches = batches.reduce((acc, b) => ({ ...acc, [b.name]: b }), {});
+                this.faculties = faculties.reduce((acc, f) => ({ ...acc, [f.id]: f }), {});
+                this.working_days = working_days;
+                this.working_hours_per_day = working_hours_per_day;
+                this.start_hour = start_hour;
+                this.timetable = [];
+                
+                this.time_slots = [];
+                for (let day = 0; day < working_days; day++) {
+                    for (let hour = start_hour; hour < start_hour + working_hours_per_day; hour++) {
+                        this.time_slots.push(new TimeSlot(day, hour));
+                    }
+                }
+            }
+
+            isSlotAvailable(time_slot, classroom_id, faculty_id, batch_name, currentTimetable) {
+                for (const entry of currentTimetable) {
+                    if (entry.time_slot.equals(time_slot)) {
+                        if (entry.classroom === classroom_id || entry.faculty === faculty_id || entry.batch === batch_name) {
+                            return false;
+                        }
+                    }
+                }
+                const faculty = this.faculties[faculty_id];
+                if (faculty.unavailable_slots.has(TimeSlot.getKey(time_slot.day, time_slot.hour))) {
+                    return false;
+                }
+                return true;
+            }
+
+            getBatchClassesOnDay(batch_name, day, currentTimetable) {
+                return currentTimetable.filter(e => e.batch === batch_name && e.time_slot.day === day).length;
+            }
+
+            canScheduleClass(subject, batch_name, time_slot, classroom_id, faculty_id, currentTimetable) {
+                if (!this.isSlotAvailable(time_slot, classroom_id, faculty_id, batch_name, currentTimetable)) {
+                    return false;
+                }
+                const batch = this.batches[batch_name];
+                if (this.getBatchClassesOnDay(batch_name, time_slot.day, currentTimetable) >= batch.max_classes_per_day) {
+                    return false;
+                }
+                const faculty = this.faculties[faculty_id];
+                if (!faculty.subjects.includes(subject.name)) {
+                    return false;
+                }
+                return true;
+            }
+            
+            getSuitableFaculties(subject) {
+                const suitable = [];
+                for (const faculty of Object.values(this.faculties)) {
+                    if (faculty.subjects.includes(subject.name)) {
+                        suitable.push(faculty.id);
+                    }
+                }
+                return suitable;
+            }
+
+            calculateFitness(timetable) {
+                let fitness = 0;
+                const requiredClasses = {};
+                for (const batch of Object.values(this.batches)) {
+                    for (const subject of batch.subjects) {
+                        const key = `${batch.name}-${subject.name}`;
+                        requiredClasses[key] = subject.classes_per_week;
+                    }
+                }
+
+                const scheduledClasses = {};
+                for (const entry of timetable) {
+                    const key = `${entry.batch}-${entry.subject.name}`;
+                    scheduledClasses[key] = (scheduledClasses[key] || 0) + 1;
+                }
+                
+                for (const key in requiredClasses) {
+                    const required = requiredClasses[key];
+                    const scheduled = scheduledClasses[key] || 0;
+                    fitness += Math.min(scheduled, required) / required * 100;
+                }
+
+                for (const key in scheduledClasses) {
+                    if (requiredClasses[key]) {
+                        const required = requiredClasses[key];
+                        const scheduled = scheduledClasses[key];
+                        if (scheduled > required) {
+                            fitness -= (scheduled - required) * 10;
+                        }
+                    }
+                }
+
+                // Penalty for uneven distribution
+                for (const batchName in this.batches) {
+                    const dailyCounts = Array(this.working_days).fill(0);
+                    for (const entry of timetable) {
+                        if (entry.batch === batchName) {
+                            dailyCounts[entry.time_slot.day]++;
+                        }
+                    }
+                    if (dailyCounts.length > 0) {
+                        const avg = dailyCounts.reduce((a, b) => a + b, 0) / dailyCounts.length;
+                        const variance = dailyCounts.reduce((acc, count) => acc + Math.pow(count - avg, 2), 0) / dailyCounts.length;
+                        fitness -= variance * 5;
+                    }
+                }
+                return fitness;
+            }
+
+            generateRandomTimetable() {
+                let currentTimetable = [];
+                const classesToSchedule = [];
+                for (const batch of Object.values(this.batches)) {
+                    for (const subject of batch.subjects) {
+                        const suitableFaculties = this.getSuitableFaculties(subject);
+                        if (suitableFaculties.length === 0) continue;
+                        for (let i = 0; i < subject.classes_per_week; i++) {
+                            classesToSchedule.push({ subject, batch_name: batch.name, suitable_faculties: suitableFaculties });
+                        }
+                    }
+                }
+
+                classesToSchedule.sort(() => Math.random() - 0.5); // Shuffle
+                const classroomIds = Object.keys(this.classrooms);
+
+                for (const classInfo of classesToSchedule) {
+                    let scheduled = false;
+                    for (let i = 0; i < 100 && !scheduled; i++) { // Max 100 attempts
+                        const time_slot = this.time_slots[Math.floor(Math.random() * this.time_slots.length)];
+                        const classroom_id = classroomIds[Math.floor(Math.random() * classroomIds.length)];
+                        const faculty_id = classInfo.suitable_faculties[Math.floor(Math.random() * classInfo.suitable_faculties.length)];
+
+                        if (this.canScheduleClass(classInfo.subject, classInfo.batch_name, time_slot, classroom_id, faculty_id, currentTimetable)) {
+                            currentTimetable.push(new TimetableEntry(classInfo.subject, classInfo.batch_name, classroom_id, faculty_id, time_slot));
+                            scheduled = true;
+                        }
+                    }
+                }
+                return currentTimetable;
+            }
+
+            crossover(parent1, parent2) {
+                 if (!parent1.length || !parent2.length) return [parent1, parent2];
+                const point = Math.floor(Math.random() * Math.min(parent1.length, parent2.length));
+                const child1 = [...parent1.slice(0, point), ...parent2.slice(point)];
+                const child2 = [...parent2.slice(0, point), ...parent1.slice(point)];
+                return [this.removeConflicts(child1), this.removeConflicts(child2)];
+            }
+            
+            mutate(timetable, mutationRate) {
+                if (Math.random() > mutationRate || timetable.length === 0) {
+                     return timetable;
+                }
+                const index = Math.floor(Math.random() * timetable.length);
+                const entryToMutate = timetable[index];
+                
+                const tempTimetable = [...timetable];
+                tempTimetable.splice(index, 1);
+
+                const suitableFaculties = this.getSuitableFaculties(entryToMutate.subject);
+                if (suitableFaculties.length === 0) return timetable; // Cannot mutate
+                const classroomIds = Object.keys(this.classrooms);
+
+                for (let i = 0; i < 20; i++) { // Max 20 attempts
+                    const newTimeSlot = this.time_slots[Math.floor(Math.random() * this.time_slots.length)];
+                    const newClassroom = classroomIds[Math.floor(Math.random() * classroomIds.length)];
+                    const newFaculty = suitableFaculties[Math.floor(Math.random() * suitableFaculties.length)];
+                    
+                    if (this.canScheduleClass(entryToMutate.subject, entryToMutate.batch, newTimeSlot, newClassroom, newFaculty, tempTimetable)) {
+                        timetable[index] = new TimetableEntry(entryToMutate.subject, entryToMutate.batch, newClassroom, newFaculty, newTimeSlot);
+                        return timetable;
+                    }
+                }
+                 return timetable; // Mutation failed
+            }
+            
+            removeConflicts(timetable) {
+                const finalTimetable = [];
+                const usedSlots = new Set();
+                for(const entry of timetable) {
+                    const classKey = `${entry.time_slot.day}-${entry.time_slot.hour}-${entry.classroom}`;
+                    const facultyKey = `${entry.time_slot.day}-${entry.time_slot.hour}-${entry.faculty}`;
+                    const batchKey = `${entry.time_slot.day}-${entry.time_slot.hour}-${entry.batch}`;
+                    if(!usedSlots.has(classKey) && !usedSlots.has(facultyKey) && !usedSlots.has(batchKey)) {
+                        finalTimetable.push(entry);
+                        usedSlots.add(classKey);
+                        usedSlots.add(facultyKey);
+                        usedSlots.add(batchKey);
+                    }
+                }
+                return finalTimetable;
+            }
+            
+            async geneticAlgorithm(populationSize, generations, mutationRate, statusCallback) {
+                let population = Array(populationSize).fill(0).map(() => this.generateRandomTimetable());
+                
+                let bestTimetable = null;
+                let bestFitness = -Infinity;
+
+                for (let gen = 0; gen < generations; gen++) {
+                    const fitnessScores = population.map(tt => this.calculateFitness(tt));
+                    
+                    for (let i = 0; i < population.length; i++) {
+                        if(fitnessScores[i] > bestFitness) {
+                            bestFitness = fitnessScores[i];
+                            bestTimetable = JSON.parse(JSON.stringify(population[i])); // Deep copy
+                        }
+                    }
+
+                    if (statusCallback) {
+                        await statusCallback(`Generation ${gen + 1}/${generations}: Best Fitness = ${bestFitness.toFixed(2)}`);
+                    }
+
+                    // Selection (Tournament)
+                    const newPopulation = [];
+                    for(let i = 0; i < populationSize; i++) {
+                        const p1_idx = Math.floor(Math.random() * populationSize);
+                        const p2_idx = Math.floor(Math.random() * populationSize);
+                        newPopulation.push(fitnessScores[p1_idx] > fitnessScores[p2_idx] ? population[p1_idx] : population[p2_idx]);
+                    }
+                    
+                    // Crossover & Mutation
+                    let children = [];
+                    for (let i = 0; i < populationSize; i += 2) {
+                        const parent1 = newPopulation[i];
+                        const parent2 = newPopulation[i + 1];
+                        let [child1, child2] = this.crossover(parent1, parent2);
+                        children.push(this.mutate(child1, mutationRate));
+                        children.push(this.mutate(child2, mutationRate));
+                    }
+                    population = children;
+                }
+                return bestTimetable;
+            }
+        }
+        
+        // --- UI AND EVENT HANDLING ---
+
+        function loadSampleData() {
+            const classrooms = [
+                { "id": "101", "capacity": 40 }, { "id": "102", "capacity": 40 },
+                { "id": "103", "capacity": 35 }, { "id": "LAB1", "capacity": 25 }
+            ];
+            const faculties = [
+                { "id": "F001", "name": "Dr. Smith", "subjects": ["Mathematics", "Statistics"] },
+                { "id": "F002", "name": "Prof. Johnson", "subjects": ["Physics", "Electronics"] },
+                { "id": "F003", "name": "Dr. Brown", "subjects": ["Chemistry", "Organic Chemistry"] },
+                { "id": "F004", "name": "Ms. Davis", "subjects": ["English", "Literature"] },
+                { "id": "F005", "name": "Mr. Wilson", "subjects": ["Computer Science", "Programming"] }
+            ];
+            const batches = [
+                {
+                    "name": "CSE-1A", "max_classes_per_day": 6,
+                    "subjects": [
+                        { "name": "Mathematics", "classes_per_week": 5 }, { "name": "Physics", "classes_per_week": 4 },
+                        { "name": "English", "classes_per_week": 3 }, { "name": "Computer Science", "classes_per_week": 6 }
+                    ]
+                },
+                {
+                    "name": "EEE-1A", "max_classes_per_day": 5,
+                    "subjects": [
+                        { "name": "Mathematics", "classes_per_week": 5 }, { "name": "Physics", "classes_per_week": 4 },
+                        { "name": "Chemistry", "classes_per_week": 4 }, { "name": "Electronics", "classes_per_week": 4 }
+                    ]
+                }
+            ];
+            document.getElementById('classrooms-input').value = JSON.stringify(classrooms, null, 2);
+            document.getElementById('faculties-input').value = JSON.stringify(faculties, null, 2);
+            document.getElementById('batches-input').value = JSON.stringify(batches, null, 2);
+        }
+
+        async function runGenerator() {
+            const outputDiv = document.getElementById('timetable-output');
+            const statusDiv = document.getElementById('status-output');
+            outputDiv.innerHTML = '<p class="text-gray-500">Generating timetable... This might take a moment.</p>';
+            statusDiv.innerHTML = '';
+
+            try {
+                // Parse inputs
+                const classrooms = JSON.parse(document.getElementById('classrooms-input').value).map(c => new Classroom(c.id, c.capacity));
+                const faculties = JSON.parse(document.getElementById('faculties-input').value).map(f => new Faculty(f.id, f.name, f.subjects));
+                const batches = JSON.parse(document.getElementById('batches-input').value).map(b => new Batch(b.name, b.subjects, b.max_classes_per_day));
+                
+                // Get settings
+                const working_days = parseInt(document.getElementById('working-days').value);
+                const hours_per_day = parseInt(document.getElementById('hours-per-day').value);
+                const start_hour = parseInt(document.getElementById('start-hour').value);
+                const useGenetic = document.getElementById('use-genetic').checked;
+                
+                // Instantiate generator
+                const generator = new TimetableGenerator(classrooms, batches, faculties, working_days, hours_per_day, start_hour);
+
+                let finalTimetable;
+                if(useGenetic) {
+                    const populationSize = parseInt(document.getElementById('population-size').value);
+                    const generations = parseInt(document.getElementById('generations').value);
+                    const mutationRate = parseFloat(document.getElementById('mutation-rate').value);
+
+                    // A helper function to update status without blocking the UI thread
+                    const statusCallback = (message) => {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                statusDiv.textContent = message;
+                                resolve();
+                            }, 0);
+                        });
+                    };
+                    finalTimetable = await generator.geneticAlgorithm(populationSize, generations, mutationRate, statusCallback);
+                    statusDiv.innerHTML = `<strong>Generation Complete!</strong> Final Fitness: ${generator.calculateFitness(finalTimetable).toFixed(2)}`;
+
+                } else {
+                     statusDiv.textContent = 'Using randomized generation...';
+                     finalTimetable = generator.generateRandomTimetable();
+                }
+                
+                renderTimetable(finalTimetable, generator);
+
+            } catch (e) {
+                console.error(e);
+                outputDiv.innerHTML = `<p class="text-red-600 font-semibold">An error occurred. Please check your JSON input format and console for details.</p><pre class="mt-2 p-2 bg-red-50 text-red-800 rounded-md text-sm">${e.stack}</pre>`;
+                statusDiv.innerHTML = '';
+            }
+        }
+        
+        function renderTimetable(timetable, generator) {
+            const outputDiv = document.getElementById('timetable-output');
+            if (!timetable || timetable.length === 0) {
+                outputDiv.innerHTML = '<p class="text-gray-500">Could not generate a valid timetable with the given constraints.</p>';
+                return;
+            }
+            
+            // Re-hydrate TimeSlot objects after deep copy
+            timetable = timetable.map(entry => {
+                entry.time_slot = new TimeSlot(entry.time_slot.day, entry.time_slot.hour);
+                return entry;
+            });
+
+            const { batches, faculties, working_days, start_hour, working_hours_per_day } = generator;
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].slice(0, working_days);
+
+            let html = '<div class="timetable-grid">';
+            
+            for(const batchName in batches) {
+                html += `<div class="timetable-batch"><h3>Batch: ${batchName}</h3><table>`;
+                // Header row (Days)
+                html += '<thead><tr><th>Time</th>';
+                days.forEach(day => html += `<th>${day}</th>`);
+                html += '</tr></thead>';
+
+                // Body rows (Time slots)
+                html += '<tbody>';
+                for (let hour = start_hour; hour < start_hour + working_hours_per_day; hour++) {
+                    html += `<tr><th>${String(hour).padStart(2,'0')}:00 - ${String(hour+1).padStart(2,'0')}:00</th>`;
+                    for(let dayIndex = 0; dayIndex < working_days; dayIndex++) {
+                        const entry = timetable.find(e => e.batch === batchName && e.time_slot.day === dayIndex && e.time_slot.hour === hour);
+                        if(entry) {
+                            html += `<td>
+                                <div>${entry.subject.name}</div>
+                                <span>${faculties[entry.faculty].name}</span>
+                                <span class="font-bold text-blue-600">Room: ${entry.classroom}</span>
+                            </td>`;
+                        } else {
+                            html += '<td></td>';
+                        }
+                    }
+                    html += '</tr>';
+                }
+                html += '</tbody></table></div>';
+            }
+            html += '</div>';
+
+            outputDiv.innerHTML = html;
+        }
+
+        // Load sample data on initial page load
+        window.onload = loadSampleData;
+    </script>
+</body>
+</html>
